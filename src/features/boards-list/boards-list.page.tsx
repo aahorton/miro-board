@@ -1,81 +1,111 @@
-import { rqClient } from "@/shared/api/instance";
-import { CONFIG } from "@/shared/model/config";
-import { ROUTES } from "@/shared/model/routes";
+import { useState } from "react";
 import { Button } from "@/shared/ui/kit/button";
-import { Card, CardFooter, CardHeader } from "@/shared/ui/kit/card";
-import { useQueryClient } from "@tanstack/react-query";
-import { Link, href } from "react-router-dom";
+import { useBoardsList } from "./model/use-boards-list";
+import { useBoardsFilters } from "./model/use-boards-filters";
+import { useDebouncedValue } from "@/shared/lib/react";
+import { useCreateBoard } from "./model/use-create-board";
+
+import { PlusIcon } from "lucide-react";
+import {
+  BoardsListLayout,
+  BoardsListLayoutContent,
+  BoardsListLayoutFilters,
+  BoardsListLayoutHeader,
+} from "./ui/boards-list-layout";
+import { ViewMode, ViewModeToggle } from "./ui/view-mode-toggle";
+import { BoardsSortSelect } from "./ui/boards-sort-select";
+import { BoardsSearchInput } from "./ui/boards-search-input";
+import { BoardItem } from "./compose/board-item";
+import { BoardCard } from "./compose/board-card";
+import { BoardsSidebar } from "./ui/boards-sidebar";
+import {
+  TemplatesGallery,
+  TemplatesModal,
+  useTemplatesModal,
+} from "@/features/board-templates";
 
 function BoardsListPage() {
-  const queryClient = useQueryClient();
-  const boardsQuery = rqClient.useQuery("get", "/boards");
-
-  const createBoardMutation = rqClient.useMutation("post", "/boards", {
-    onSettled: async () => {
-      await queryClient.invalidateQueries(
-        rqClient.queryOptions("get", "/boards"),
-      );
-    },
+  const boardsFilters = useBoardsFilters();
+  const boardsQuery = useBoardsList({
+    sort: boardsFilters.sort,
+    search: useDebouncedValue(boardsFilters.search, 300),
   });
 
-  const deleteBoardMutation = rqClient.useMutation(
-    "delete",
-    "/boards/{boardId}",
-    {
-      onSettled: async () => {
-        await queryClient.invalidateQueries(
-          rqClient.queryOptions("get", "/boards"),
-        );
-      },
-    },
-  );
+  const templatesModal = useTemplatesModal();
+
+  const createBoard = useCreateBoard();
+
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   return (
-    <div className="container mx-auto p-4">
-      <h1>Boards list {CONFIG.API_BASE_URL}</h1>
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.target as HTMLFormElement);
-          createBoardMutation.mutate({
-            body: { name: formData.get("name") as string },
-          });
-        }}
+    <>
+      <TemplatesModal />
+      <BoardsListLayout
+        templates={<TemplatesGallery />}
+        sidebar={<BoardsSidebar />}
+        header={
+          <BoardsListLayoutHeader
+            title="Boards"
+            description="Here you can view and manage your boards"
+            actions={
+              <>
+                <Button variant="outline" onClick={() => templatesModal.open()}>
+                  Choose template
+                </Button>
+                <Button
+                  disabled={createBoard.isPending}
+                  onClick={createBoard.createBoard}
+                >
+                  <PlusIcon />
+                  Create board
+                </Button>
+              </>
+            }
+          />
+        }
+        filters={
+          <BoardsListLayoutFilters
+            sort={
+              <BoardsSortSelect
+                value={boardsFilters.sort}
+                onValueChange={boardsFilters.setSort}
+              />
+            }
+            filters={
+              <BoardsSearchInput
+                value={boardsFilters.search}
+                onChange={boardsFilters.setSearch}
+              />
+            }
+            actions={
+              <ViewModeToggle
+                value={viewMode}
+                onChange={(value) => setViewMode(value)}
+              />
+            }
+          />
+        }
       >
-        <input name="name" />
-        <button type="submit" disabled={createBoardMutation.isPending}>
-          Create board
-        </button>
-      </form>
-
-      <div className="grid grid-cols-3 gap-4">
-        {boardsQuery.data?.map((board) => (
-          <Card key={board.id}>
-            <CardHeader>
-              <Button asChild variant="link">
-                <Link to={href(ROUTES.BOARD, { boardId: board.id })}>
-                  {board.name}
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardFooter>
-              <Button
-                variant="destructive"
-                disabled={deleteBoardMutation.isPending}
-                onClick={() =>
-                  deleteBoardMutation.mutate({
-                    params: { path: { boardId: board.id } },
-                  })
-                }
-              >
-                Delete
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
-    </div>
+        <BoardsListLayoutContent
+          isEmpty={boardsQuery.boards.length === 0}
+          isPending={boardsQuery.isPending}
+          isPendingNext={boardsQuery.isFetchingNextPage}
+          cursorRef={boardsQuery.cursorRef}
+          hasCursor={boardsQuery.hasNextPage}
+          mode={viewMode}
+          renderList={() =>
+            boardsQuery.boards.map((board) => (
+              <BoardItem key={board.id} board={board} />
+            ))
+          }
+          renderGrid={() =>
+            boardsQuery.boards.map((board) => (
+              <BoardCard key={board.id} board={board} />
+            ))
+          }
+        />
+      </BoardsListLayout>
+    </>
   );
 }
 

@@ -23,7 +23,7 @@ const loginSchema = z.object({
     .string({
       required_error: "Password is required",
     })
-    .min(6, "The password must be at least 6 characters long"),
+    .min(6, "Password must be at least 6 characters"),
 });
 
 export function LoginForm() {
@@ -72,7 +72,7 @@ export function LoginForm() {
         )}
 
         <Button disabled={isPending} type="submit">
-          Log In
+          Login
         </Button>
       </form>
     </Form>

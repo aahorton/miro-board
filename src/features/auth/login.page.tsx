@@ -6,7 +6,7 @@ import { LoginForm } from "./ui/login-form";
 function LoginPage() {
   return (
     <AuthLayout
-      title="Sign In"
+      title="Sign in"
       description="Enter your email and password to sign in"
       form={<LoginForm />}
       footerText={
@@ -17,4 +17,5 @@ function LoginPage() {
     />
   );
 }
+
 export const Component = LoginPage;

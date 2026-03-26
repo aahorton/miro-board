@@ -24,12 +24,12 @@ const registerSchema = z
       .string({
         required_error: "Password is required",
       })
-      .min(6, "The password must be at least 6 characters long"),
+      .min(6, "Password must be at least 6 characters"),
     confirmPassword: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     path: ["confirmPassword"],
-    message: "The passwords do not match",
+    message: "Passwords do not match",
   });
 
 export function RegisterForm() {

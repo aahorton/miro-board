@@ -6,12 +6,12 @@ import { RegisterForm } from "./ui/register-form";
 function RegisterPage() {
   return (
     <AuthLayout
-      title="Sign Up"
+      title="Registration"
       description="Enter your email and password to register in the system"
       form={<RegisterForm />}
       footerText={
         <>
-          Already have an account? <Link to={ROUTES.LOGIN}>Sign in</Link>
+          Already have an account? <Link to={ROUTES.LOGIN}>Log in</Link>
         </>
       }
     />
