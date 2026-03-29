@@ -8,14 +8,26 @@ import { useGoToAddSticker } from "./use-go-to-add-sticker";
 import { useGoToEditSticker } from "./use-go-to-edit-sticker";
 import { useGoToSelectionWindow } from "./use-go-to-selection-window";
 import { useMouseDown } from "./use-mouse-down";
+import { useGoToNodesDragging } from "./use-go-to-nodes-dragging";
+import { useGoToWindowDragging } from "./use-go-to-window-dragging";
 
 export type IdleViewState = {
   type: "idle";
   selectedIds: Set<string>;
-  mouseDown?: {
-    x: number;
-    y: number;
-  };
+  mouseDown?:
+    | {
+        type: "overlay";
+        x: number;
+        y: number;
+        isRightClick: boolean;
+      }
+    | {
+        type: "node";
+        x: number;
+        y: number;
+        nodeId: string;
+        isRightClick: boolean;
+      };
 };
 
 export function useIdleViewModel(params: ViewModelParams) {
@@ -25,6 +37,8 @@ export function useIdleViewModel(params: ViewModelParams) {
   const goToEditSticker = useGoToEditSticker(params);
   const goToAddSticker = useGoToAddSticker(params);
   const goToSelectionWindow = useGoToSelectionWindow(params);
+  const goToNodesDragging = useGoToNodesDragging(params);
+  const goToWindowDragging = useGoToWindowDragging(params);
   const mouseDown = useMouseDown(params);
   const selection = useSelection(params);
 
@@ -32,7 +46,11 @@ export function useIdleViewModel(params: ViewModelParams) {
     nodes: nodesModel.nodes.map((node) => ({
       ...node,
       isSelected: selection.isSelected(idleState, node.id),
-      onClick: (e) => {
+      onMouseDown: (e) => mouseDown.handleNodeMouseDown(idleState, node.id, e),
+      onMouseUp: (e) => {
+        if (!mouseDown.getIsStickerMouseDown(idleState, node.id)) {
+          return;
+        }
         const clickResult = goToEditSticker.handleNodeClick(
           idleState,
           node.id,
@@ -44,9 +62,6 @@ export function useIdleViewModel(params: ViewModelParams) {
     })),
     layout: {
       onKeyDown: (e) => {
-        const keyDownResult = goToEditSticker.handleKeyDown(idleState, e);
-        if (keyDownResult.preventNext) return;
-
         deleteSelected.handleKeyDown(idleState, e);
         goToAddSticker.handleKeyDown(e);
       },
@@ -56,8 +71,12 @@ export function useIdleViewModel(params: ViewModelParams) {
       onMouseUp: () => selection.handleOverlayMouseUp(idleState),
     },
     window: {
-      onMouseMove: (e) =>
-        goToSelectionWindow.handleWindowMouseMove(idleState, e),
+      onMouseMove: (e) => {
+        goToNodesDragging.handleWindowMouseMove(idleState, e);
+        goToSelectionWindow.handleWindowMouseMove(idleState, e);
+        goToWindowDragging.handleWindowMouseMove(idleState, e);
+      },
+
       onMouseUp: () => mouseDown.handleWindowMouseUp(idleState),
     },
     actions: {

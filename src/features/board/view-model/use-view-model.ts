@@ -14,12 +14,23 @@ import {
   EditStickerViewState,
   useEditStickerViewModel,
 } from "./variants/edit-sticker";
+import {
+  NodesDraggingViewState,
+  useNodesDraggingViewModel,
+} from "./variants/nodes-dragging";
+import {
+  useWindowDraggingViewModel,
+  WindowDraggingViewState,
+} from "./variants/window-dragging";
+import { useZoomDecorator } from "./decorator/zoom";
 
 export type ViewState =
   | AddStickerViewState
   | EditStickerViewState
   | IdleViewState
-  | SelectionWindowViewState;
+  | SelectionWindowViewState
+  | NodesDraggingViewState
+  | WindowDraggingViewState;
 
 export function useViewModel(params: Omit<ViewModelParams, "setViewState">) {
   const [viewState, setViewState] = useState<ViewState>(() => goToIdle());
@@ -33,6 +44,10 @@ export function useViewModel(params: Omit<ViewModelParams, "setViewState">) {
   const editStickerViewModel = useEditStickerViewModel(newParams);
   const idleViewModel = useIdleViewModel(newParams);
   const selectionWindowViewModel = useSelectionWindowViewModel(newParams);
+  const nodesDraggingViewModel = useNodesDraggingViewModel(newParams);
+  const windowDraggingViewModel = useWindowDraggingViewModel(newParams);
+
+  const zoomDecorator = useZoomDecorator(newParams);
 
   let viewModel: ViewModel;
   switch (viewState.type) {
@@ -40,7 +55,6 @@ export function useViewModel(params: Omit<ViewModelParams, "setViewState">) {
       viewModel = addStickerViewModel();
       break;
     case "edit-sticker": {
-      console.log("edit-sticker", viewState);
       viewModel = editStickerViewModel(viewState);
       break;
     }
@@ -52,9 +66,18 @@ export function useViewModel(params: Omit<ViewModelParams, "setViewState">) {
       viewModel = selectionWindowViewModel(viewState);
       break;
     }
+    case "nodes-dragging": {
+      console.log("nodes-dragging", viewState);
+      viewModel = nodesDraggingViewModel(viewState);
+      break;
+    }
+    case "window-dragging": {
+      viewModel = windowDraggingViewModel(viewState);
+      break;
+    }
     default:
       throw new Error("Invalid view state");
   }
 
-  return viewModel;
+  return zoomDecorator(viewModel);
 }

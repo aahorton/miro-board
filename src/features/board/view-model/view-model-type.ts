@@ -1,4 +1,5 @@
 import { Rect } from "../domain/rect";
+import { WindowPosition } from "../model/window-position";
 
 type ViewModeNode = {
   id: string;
@@ -9,11 +10,14 @@ type ViewModeNode = {
   isEditing?: boolean;
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   onTextChange?: (text: string) => void;
+  onMouseDown?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onMouseUp?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 };
 
 export type ViewModel = {
   nodes: ViewModeNode[];
   selectionWindow?: Rect;
+  windowPosition?: WindowPosition;
   layout?: {
     onKeyDown?: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   };
@@ -28,6 +32,7 @@ export type ViewModel = {
   window?: {
     onMouseUp?: (e: MouseEvent) => void;
     onMouseMove?: (e: MouseEvent) => void;
+    onMouseWheel?: (e: WheelEvent) => void;
   };
   actions?: {
     addSticker?: {
