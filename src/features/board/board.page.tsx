@@ -10,11 +10,12 @@ import { Overlay } from "./ui/overlay";
 import { Layout } from "./ui/layout";
 import { Dots } from "./ui/dots";
 import { Canvas } from "./ui/canvas";
-import { Sticker } from "./ui/sticker";
+import { Sticker } from "./ui/nodes/sticker";
 import { Actions } from "./ui/actions";
 import { ActionButton } from "./ui/action-button";
 import { useNodesDimensions } from "./hooks/use-nodes-dimensions";
 import { useWindowPositionModel } from "./model/window-position";
+import { Arrow } from "./ui/nodes/arrow";
 
 function BoardPage() {
   const nodesModel = useNodes();
@@ -51,9 +52,14 @@ function BoardPage() {
         onClick={viewModel.canvas?.onClick}
         windowPosition={windowPosition}
       >
-        {viewModel.nodes.map((node) => (
-          <Sticker key={node.id} {...node} ref={nodeRef} />
-        ))}
+        {viewModel.nodes.map((node) => {
+          if (node.type === "sticker") {
+            return <Sticker key={node.id} {...node} ref={nodeRef} />;
+          }
+          if (node.type === "arrow") {
+            return <Arrow key={node.id} {...node} ref={nodeRef} />;
+          }
+        })}
         {viewModel.selectionWindow && (
           <SelectionWindow {...viewModel.selectionWindow} />
         )}
@@ -66,7 +72,10 @@ function BoardPage() {
         >
           <StickerIcon />
         </ActionButton>
-        <ActionButton isActive={false} onClick={() => {}}>
+        <ActionButton
+          isActive={viewModel.actions?.addArrow?.isActive}
+          onClick={viewModel.actions?.addArrow?.onClick}
+        >
           <ArrowRightIcon />
         </ActionButton>
       </Actions>

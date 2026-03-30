@@ -1,4 +1,3 @@
-import React from "react";
 import { Rect } from "../domain/rect";
 
 export function SelectionWindow({ height, width, x, y }: Rect) {

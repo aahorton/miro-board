@@ -1,10 +1,10 @@
+import React from "react";
 import {
   SelectionModifier,
   selectItems,
 } from "@/features/board/domain/selection";
 import { IdleViewState } from ".";
 import { ViewModelParams } from "../../view-model-params";
-import React from "react";
 
 export function useSelection({ setViewState }: ViewModelParams) {
   const select = (
@@ -25,7 +25,7 @@ export function useSelection({ setViewState }: ViewModelParams) {
   const handleNodeClick = (
     idleState: IdleViewState,
     nodeId: string,
-    e: React.MouseEvent<HTMLButtonElement>,
+    e: React.MouseEvent,
   ) => {
     if (e.ctrlKey || e.shiftKey) {
       select(idleState, [nodeId], "toggle");
