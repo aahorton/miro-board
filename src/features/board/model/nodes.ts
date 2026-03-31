@@ -21,29 +21,18 @@ type ArrowNode = NodeBase & {
 
 export type Node = StickerNode | ArrowNode;
 
+const createNodes = (num: number): Node[] => {
+  return Array.from({ length: num }).map((_, i) => ({
+    id: i.toString(),
+    type: "sticker",
+    text: "Hello " + i,
+    x: Math.random() * 5000,
+    y: Math.random() * 5000,
+  }));
+};
+
 export function useNodes() {
-  const [nodes, setNodes] = useState<Node[]>([
-    {
-      id: "1",
-      type: "sticker",
-      text: "Hello 1",
-      x: 100,
-      y: 100,
-    },
-    {
-      id: "2",
-      type: "sticker",
-      text: "Hello 2",
-      x: 200,
-      y: 200,
-    },
-    {
-      id: "3",
-      type: "arrow",
-      start: { x: 10, y: 10, relativeTo: "1" },
-      end: { x: 20, y: 20, relativeTo: "2" },
-    },
-  ]);
+  const [nodes, setNodes] = useState<Node[]>(() => createNodes(400));
 
   const addSticker = (data: { text: string; x: number; y: number }) => {
     setNodes((lastNodes) => [

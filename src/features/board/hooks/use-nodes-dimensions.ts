@@ -42,11 +42,11 @@ export const useNodesDimensions = () => {
     if (el) {
       resizeObserver.observe(el);
       return () => {
-        setNodesDimensions((prev) => {
-          const newNodesDimensions = { ...prev };
-          delete newNodesDimensions[(el as HTMLElement).dataset.id ?? ""];
-          return newNodesDimensions;
-        });
+        // setNodesDimensions((prev) => {
+        // const newNodesDimensions = { ...prev };
+        // delete newNodesDimensions[(el as HTMLElement).dataset.id ?? ""];
+        // return newNodesDimensions;
+        // });
         resizeObserver.unobserve(el);
       };
     }

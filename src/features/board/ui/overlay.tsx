@@ -1,6 +1,6 @@
-import React from "react";
+import React, { memo } from "react";
 
-export function Overlay({
+export const Overlay = memo(function Overlay({
   onClick,
   onMouseDown,
   onMouseUp,
@@ -17,4 +17,4 @@ export function Overlay({
       onMouseUp={onMouseUp}
     ></div>
   );
-}
+});

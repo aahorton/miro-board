@@ -1,7 +1,11 @@
-import React from "react";
+import React, { memo } from "react";
 import { WindowPosition } from "../model/window-position";
 
-export function Dots({ windowPosition }: { windowPosition: WindowPosition }) {
+export const Dots = memo(function Dots({
+  windowPosition,
+}: {
+  windowPosition: WindowPosition;
+}) {
   return (
     <div
       style={
@@ -19,4 +23,4 @@ export function Dots({ windowPosition }: { windowPosition: WindowPosition }) {
     "
     ></div>
   );
-}
+});

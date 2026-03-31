@@ -16,6 +16,19 @@ import { ActionButton } from "./ui/action-button";
 import { useNodesDimensions } from "./hooks/use-nodes-dimensions";
 import { useWindowPositionModel } from "./model/window-position";
 import { Arrow } from "./ui/nodes/arrow";
+import { useCallback, useMemo, useRef } from "react";
+import { createRectFromDimensions, isRectsIntersecting } from "./domain/rect";
+import { Profiler } from "react";
+
+export function useEventCallback<
+  T extends ((...args: never[]) => void) | undefined,
+>(fn: T): T {
+  const ref = useRef(fn);
+
+  ref.current = fn;
+
+  return useCallback((...args: never[]) => ref.current?.(...args), []) as T;
+}
 
 function BoardPage() {
   const nodesModel = useNodes();
@@ -24,62 +37,96 @@ function BoardPage() {
   const { canvasRef, canvasRect } = useCanvasRect();
   const { nodeRef, nodesDimensions } = useNodesDimensions();
 
+  performance.mark("compute view model");
   const viewModel = useViewModel({
     nodesModel,
     canvasRect,
     nodesDimensions,
     windowPositionModel,
   });
+  performance.mark("compute view model");
 
   useWindowEvents(viewModel);
 
   const windowPosition =
     viewModel.windowPosition ?? windowPositionModel.position;
 
+  const windowRect = useMemo(
+    () => ({
+      x: windowPosition.x,
+      y: windowPosition.y,
+      width: canvasRect ? canvasRect.width / windowPosition.zoom : 0,
+      height: canvasRect ? canvasRect.height / windowPosition.zoom : 0,
+    }),
+    [windowPosition, canvasRect],
+  );
+
+  const virtualNodes = useMemo(() => {
+    return viewModel.nodes.filter((node) => {
+      if (node.type === "arrow") return true;
+      const nodeDimension = nodesDimensions[node.id];
+
+      if (!nodeDimension) {
+        return true;
+      }
+      const rect = createRectFromDimensions(node, nodeDimension);
+
+      return isRectsIntersecting(windowRect, rect);
+    });
+  }, [viewModel.nodes, windowRect, nodesDimensions]);
+
   return (
-    <Layout ref={focusLayoutRef} onKeyDown={viewModel.layout?.onKeyDown}>
-      <Dots windowPosition={windowPosition} />
+    <Profiler id="all board" onRender={console.log}>
+      <Layout ref={focusLayoutRef} onKeyDown={viewModel.layout?.onKeyDown}>
+        <Dots windowPosition={windowPosition} />
 
-      <Canvas
-        ref={canvasRef}
-        overlay={
-          <Overlay
-            onClick={viewModel.overlay?.onClick}
-            onMouseDown={viewModel.overlay?.onMouseDown}
-            onMouseUp={viewModel.overlay?.onMouseUp}
-          />
-        }
-        onClick={viewModel.canvas?.onClick}
-        windowPosition={windowPosition}
-      >
-        {viewModel.nodes.map((node) => {
-          if (node.type === "sticker") {
-            return <Sticker key={node.id} {...node} ref={nodeRef} />;
+        <Canvas
+          ref={canvasRef}
+          overlay={
+            <Overlay
+              onClick={useEventCallback(viewModel.overlay?.onClick)}
+              onMouseDown={useEventCallback(viewModel.overlay?.onMouseDown)}
+              onMouseUp={useEventCallback(viewModel.overlay?.onMouseUp)}
+            />
           }
-          if (node.type === "arrow") {
-            return <Arrow key={node.id} {...node} ref={nodeRef} />;
-          }
-        })}
-        {viewModel.selectionWindow && (
-          <SelectionWindow {...viewModel.selectionWindow} />
-        )}
-      </Canvas>
+          onClick={viewModel.canvas?.onClick}
+          windowPosition={windowPosition}
+        >
+          <Profiler id="render sticker" onRender={console.log}>
+            {useMemo(
+              () =>
+                virtualNodes.map((node) => {
+                  if (node.type === "sticker") {
+                    return <Sticker key={node.id} {...node} ref={nodeRef} />;
+                  }
+                  if (node.type === "arrow") {
+                    return <Arrow key={node.id} {...node} ref={nodeRef} />;
+                  }
+                }),
+              [virtualNodes, nodeRef],
+            )}
+          </Profiler>
+          {viewModel.selectionWindow && (
+            <SelectionWindow {...viewModel.selectionWindow} />
+          )}
+        </Canvas>
 
-      <Actions>
-        <ActionButton
-          isActive={viewModel.actions?.addSticker?.isActive}
-          onClick={viewModel.actions?.addSticker?.onClick}
-        >
-          <StickerIcon />
-        </ActionButton>
-        <ActionButton
-          isActive={viewModel.actions?.addArrow?.isActive}
-          onClick={viewModel.actions?.addArrow?.onClick}
-        >
-          <ArrowRightIcon />
-        </ActionButton>
-      </Actions>
-    </Layout>
+        <Actions>
+          <ActionButton
+            isActive={viewModel.actions?.addSticker?.isActive}
+            onClick={useEventCallback(viewModel.actions?.addSticker?.onClick)}
+          >
+            <StickerIcon />
+          </ActionButton>
+          <ActionButton
+            isActive={viewModel.actions?.addArrow?.isActive}
+            onClick={useEventCallback(viewModel.actions?.addArrow?.onClick)}
+          >
+            <ArrowRightIcon />
+          </ActionButton>
+        </Actions>
+      </Layout>
+    </Profiler>
   );
 }
 
